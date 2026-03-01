@@ -1,0 +1,14 @@
+{
+  "name": "practical_work_3",
+  "version": "1.0.0",
+  "description": "Base server with Node.js and HTTP module",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
