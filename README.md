@@ -45,6 +45,11 @@
 - **Middle (GraphQL)**: Інтегровано `@apollo/server`. Написано `schema.graphql` (типи User, Event, Participant). Створено Query `getEvents` з підтримкою пагінації та фільтрації, і Mutation `addEvent`.
 - **Advanced (GraphQL)**: Реалізовано *Nested Fields* (отримання списку учасників всередині події без N+1). Додано доступ до сесії Express (auth context) всередині GraphQL резолверів. Реалізовано Data Validation (email-формат для поля organizer під час створення події).
 
-**Точки входу:**
-- REST API: `http://localhost:3000/` (`/events`, `/auth`, `/participants`)
-- GraphQL Sandbox: `http://localhost:3000/graphql`
+
+# Підсумкова Практична робота: Event Management Full-stack System (Backend)
+Фіналізація архітектури, налаштування CORS та Real-time чату.
+
+**Особливості:**
+- Налаштовано `CORS` для забезпечення вільної взаємодії з майбутнім React-клієнтом.
+- Інтегровано **Socket.io** для релізу чату підтримки онлайн (`connection`, `support_message`, `disconnect`).
+- Всі змінні (PORT, MONGO_URI) винесено в `.env`, що дозволяє безшовно зробити deploy на платформи типу **Render** чи **Railway**.

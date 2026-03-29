@@ -1,8 +1,10 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@as-integrations/express5'; // Змінено на express5
+import { expressMiddleware } from '@as-integrations/express5';
 import { PORT, HOST } from './config.js';
 import connectDB from './db.js';
 
@@ -16,11 +18,28 @@ import { typeDefs, resolvers } from './graphql/index.js';
 
 const app = express();
 
+// Створюємо HTTP сервер на базі Express додатку
+const httpServer = createServer(app);
+
+// Налаштовуємо Socket.IO з підтримкою CORS для майбутнього React фронтенду
+const io = new Server(httpServer, {
+    cors: {
+        origin: 'http://localhost:5173', // Для продакшену варто змінити на реальний URL
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
+
 (async function startServer() {
     // Підключення до БД при старті сервера
     await connectDB();
 
-    app.use(cors()); // Додано для Apollo Client / Sandbox
+    // CORS Middleware для Express
+    app.use(cors({
+        origin: 'http://localhost:5173',
+        credentials: true
+    }));
+    
     app.use(express.json());
 
     // Налаштування сесій
@@ -29,7 +48,7 @@ const app = express();
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: false, 
+            secure: false, // В продакшені (HTTPS) має бути true
             maxAge: 1000 * 60 * 60 * 24 // 1 день
         }
     }));
@@ -52,30 +71,44 @@ const app = express();
     const apolloServer = new ApolloServer({
         typeDefs,
         resolvers,
-        formatError: (formattedError, error) => {
-            // Можна додати кастомне форматування помилок
-            return formattedError;
-        }
     });
 
     await apolloServer.start();
 
-    // Підключення GraphQL (з наданням доступу до сесії у context)
     app.use('/graphql', expressMiddleware(apolloServer, {
         context: async ({ req }) => {
-            // Advanced: Передача сесії в context GraphQL
             return { user: req.session?.user };
         }
     }));
+
+    // =====================
+    // WEB SOCKETS (Advanced)
+    // =====================
+    io.on('connection', (socket) => {
+        console.log(`Клієнт підключився до чату підтримки (ID: ${socket.id})`);
+
+        // Отримання повідомлення від клієнта
+        socket.on('support_message', (data) => {
+            console.log('Нове повідомлення в чаті:', data);
+            
+            // Відправляємо повідомлення всім підключеним клієнтам (Broadcasting)
+            io.emit('support_message', data);
+        });
+
+        socket.on('disconnect', () => {
+            console.log(`Клієнт відключився (ID: ${socket.id})`);
+        });
+    });
 
     // Обробка неіснуючих маршрутів
     app.use((req, res) => {
         res.status(404).json({ error: "Маршрут не знайдено." });
     });
 
-    app.listen(PORT, HOST, () => {
-        console.log(`Сервер Express успішно запущено: http://${HOST}:${PORT}`);
-        console.log(`Доступні REST маршрути:  http://${HOST}:${PORT}/events`);
-        console.log(`Доступний GraphQL API:   http://${HOST}:${PORT}/graphql`);
+    // Зверніть увагу: ми запускаємо httpServer (з Socket.IO), а не app (Express)
+    httpServer.listen(PORT, HOST, () => {
+        console.log(`\n🚀 Фінальний Сервер (Express + GraphQL + WebSockets) успішно запущено!`);
+        console.log(`🌐 Адреса сервера: http://${HOST}:${PORT}`);
+        console.log(`💬 WebSockets (Socket.IO) готові до прийому з'єднань`);
     });
 })();
