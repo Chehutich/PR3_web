@@ -35,3 +35,16 @@
 - **Base**: Створено модель `User`. Реалізовано `POST /auth/register` (хешування через `bcrypt`) та `POST /auth/login` (вхід через `express-session`).
 - **Middle**: Додано middleware `checkAuth`. Маршрут `GET /participants/:eventId` (перегляд учасників події) захищено – доступний лише для авторизованих користувачів. Без сесії повертається 401 Unauthorized.
 - **Advanced**: Реалізовано middleware `checkRole` для перевірки ролей ('User', 'Organizer', 'Admin'). Створено тестовий захищений маршрут `DELETE /events/:eventId` (доступний лише для Admin).
+
+
+# Практична робота №4: Проектування гібридних API: REST vs GraphQL
+Реалізовано дві паралельні архітектури API для існуючої бази даних.
+
+**Особливості:**
+- **Base (REST)**: Додано поле `creator` до `Event`. Розширено REST контролери повним набором CRUD: `POST /events`, `PUT /events/:id`, `DELETE /events/:id` з перевіркою ролей/власника. Додано `POST /participants`.
+- **Middle (GraphQL)**: Інтегровано `@apollo/server`. Написано `schema.graphql` (типи User, Event, Participant). Створено Query `getEvents` з підтримкою пагінації та фільтрації, і Mutation `addEvent`.
+- **Advanced (GraphQL)**: Реалізовано *Nested Fields* (отримання списку учасників всередині події без N+1). Додано доступ до сесії Express (auth context) всередині GraphQL резолверів. Реалізовано Data Validation (email-формат для поля organizer під час створення події).
+
+**Точки входу:**
+- REST API: `http://localhost:3000/` (`/events`, `/auth`, `/participants`)
+- GraphQL Sandbox: `http://localhost:3000/graphql`

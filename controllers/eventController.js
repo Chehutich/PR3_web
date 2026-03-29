@@ -46,6 +46,60 @@ export const getEvents = async (req, res) => {
     }
 };
 
+export const createEvent = async (req, res) => {
+    try {
+        const { title, description, date, organizer } = req.body;
+        const newEvent = new Event({
+            title,
+            description,
+            date,
+            organizer,
+            creator: req.session.user.id
+        });
+        await newEvent.save();
+        res.status(201).json(newEvent);
+    } catch (err) {
+        console.error('Помилка при створенні події:', err);
+        res.status(500).json({ error: 'Помилка при створенні події' });
+    }
+};
+
+export const updateEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const event = await Event.findById(eventId);
+        
+        if (!event) return res.status(404).json({ error: 'Подію не знайдено' });
+
+        // Перевірка прав (тільки творець або Admin)
+        if (event.creator && event.creator.toString() !== req.session.user.id && req.session.user.role !== 'Admin') {
+            return res.status(403).json({ error: 'Ви можете редагувати лише власні події' });
+        }
+
+        Object.assign(event, req.body);
+        await event.save();
+        res.json(event);
+    } catch (err) {
+        console.error('Помилка при оновленні події:', err);
+        res.status(500).json({ error: 'Помилка при оновленні події' });
+    }
+};
+
 export const deleteEvent = async (req, res) => {
-    res.json({ message: 'Ви маєте права адміністратора. Маршрут для видалення події готовий до реалізації логіки.' });
+    try {
+        const eventId = req.params.id;
+        const event = await Event.findById(eventId);
+        
+        if (!event) return res.status(404).json({ error: 'Подію не знайдено' });
+
+        if (event.creator && event.creator.toString() !== req.session.user.id && req.session.user.role !== 'Admin') {
+            return res.status(403).json({ error: 'Ви можете видаляти лише власні події (або необхідні права Адміністратора)' });
+        }
+
+        await Event.findByIdAndDelete(eventId);
+        res.json({ message: 'Подію успішно видалено' });
+    } catch (err) {
+        console.error('Помилка при видаленні події:', err);
+        res.status(500).json({ error: 'Помилка при видаленні події' });
+    }
 };
